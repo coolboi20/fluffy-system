@@ -21,7 +21,7 @@ def generate_playlist(mood: str, api_key: str) -> Dict[str, Any]:
                 "You create short music playlists. Respond strictly in JSON with "
                 "the keys 'title', 'description' and 'songs'. 'songs' must be a "
                 "list of objects containing 'title' and 'artist'. Include 10 to "
-                "15 songs. Do not add any explanation or extra text."
+                "15 songs. Do not add any explanation or extra text. "
             ),
         },
         {"role": "user", "content": f"Generate a playlist for the mood: {mood}"},
@@ -34,6 +34,12 @@ def generate_playlist(mood: str, api_key: str) -> Dict[str, Any]:
     )
 
     content = response.choices[0].message.content
+
+    # Remove code fences if present
+    if content.startswith("```"):
+        content = re.sub(r"^```.*?\n", "", content)  # remove opening ```json or ```
+        content = re.sub(r"\n```$", "", content)     # remove closing ```
+        content = content.strip()
 
      # Extract JSON using regex in case GPT includes extra text or code fences
     json_match = re.search(r"\{.*\}", content, re.DOTALL)
