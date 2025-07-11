@@ -115,12 +115,14 @@ sp_oauth = SpotifyOAuth(
     client_secret=sp_client_secret,
     redirect_uri=sp_redirect_uri,
     scope="playlist-modify-public playlist-modify-private user-read-private",
-    show_dialog=True,
+    show_dialog=False,
 )
 
 query_params = st.query_params
 if "code" in query_params and "token_info" not in st.session_state:
     code = query_params["code"][0]
+    st.write(f"Code received from Spotify: {code}")
+    st.write(f"Redirect URI used: {sp_redirect_uri}")
     try:
         token_info = sp_oauth.get_access_token(code)
         access_token = token_info["access_token"]
