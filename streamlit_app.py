@@ -10,7 +10,6 @@ from spotipy.oauth2 import SpotifyOAuth
 from openai import OpenAI
 import streamlit as st
 import re
-import streamlit.components.v1 as components
 
 
 def generate_playlist(mood: str, api_key: str) -> Dict[str, Any]:
@@ -142,10 +141,17 @@ if "token_info" in st.session_state:
     sp = spotipy.Spotify(auth=token_info["access_token"])
 else:
     auth_url = sp_oauth.get_authorize_url()
-    # Immediately redirect the browser to Spotify’s login page
+    import streamlit.components.v1 as components
+
+    # If running inside an iframe (Streamlit embed), break out to top,
+    # otherwise do a normal redirect.
     js = f"""
     <script>
-      window.location.href = "{auth_url}";
+      if (window.top !== window.self) {{
+        window.top.location.href = "{auth_url}";
+      }} else {{
+        window.location.href = "{auth_url}";
+      }}
     </script>
     """
     components.html(js, height=0)
