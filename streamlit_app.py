@@ -121,7 +121,7 @@ sp_oauth = SpotifyOAuth(
 query_params = st.query_params
 if "code" in query_params and "token_info" not in st.session_state:
     code = query_params["code"][0]
-    st.write(f"Code received from Spotify: {code}")
+    st.write(f"Query parameters received: {query_params}")
     st.write(f"Redirect URI used: {sp_redirect_uri}")
     try:
         token_info = sp_oauth.get_access_token(code)
