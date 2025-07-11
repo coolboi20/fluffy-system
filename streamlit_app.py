@@ -64,7 +64,8 @@ st.title("AI Mood-Based Playlist Generator")
 # Get API key from environment or user input
 api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
-    api_key = st.text_input("Enter your OpenAI API key:", type="password")
+    st.error("OPENAI_API_KEY is not set. Please configure it in your Streamlit Cloud Secrets.")
+    st.stop()
 
 # Input for user's mood
 mood_input = st.text_input("Describe your current mood or vibe:")
