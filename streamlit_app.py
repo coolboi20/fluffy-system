@@ -141,7 +141,13 @@ if "token_info" in st.session_state:
     sp = spotipy.Spotify(auth=token_info["access_token"])
 else:
     auth_url = sp_oauth.get_authorize_url()
-    st.markdown(f"[Log in with Spotify]({auth_url})")
+    # Use an HTML link with target="_self" so it opens in the same tab
+    login_html = f'''
+        <a href="{auth_url}" target="_self" style="color:#1DB954; text-decoration:none; font-size:18px;">
+            🎵 Log in with Spotify
+        </a>
+    '''
+    st.markdown(login_html, unsafe_allow_html=True)
     st.stop()
 
 # Input for user's mood
