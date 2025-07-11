@@ -141,12 +141,13 @@ if "token_info" in st.session_state:
     sp = spotipy.Spotify(auth=token_info["access_token"])
 else:
     auth_url = sp_oauth.get_authorize_url()
-    # A top‐level link that will always break out of any iframe/embed:
+    # Open in a new tab so nothing is ever sandboxed:
     login_link = f'''
-        <a href="{auth_url}" target="_top"
-           style="font-size:18px; color:#1DB954; text-decoration:none;">
-          🎵 Log in with Spotify
-        </a>
+      <a href="{auth_url}"
+         target="_blank" rel="noopener noreferrer"
+         style="font-size:18px; color:#1DB954; text-decoration:none;">
+        🎵 Log in with Spotify (opens new tab)
+      </a>
     '''
     st.markdown(login_link, unsafe_allow_html=True)
     st.stop()
