@@ -141,20 +141,14 @@ if "token_info" in st.session_state:
     sp = spotipy.Spotify(auth=token_info["access_token"])
 else:
     auth_url = sp_oauth.get_authorize_url()
-    import streamlit.components.v1 as components
-
-    # If running inside an iframe (Streamlit embed), break out to top,
-    # otherwise do a normal redirect.
-    js = f"""
-    <script>
-      if (window.top !== window.self) {{
-        window.top.location.href = "{auth_url}";
-      }} else {{
-        window.location.href = "{auth_url}";
-      }}
-    </script>
+    # Render a plain <a> tag in the main page so the click is a top-level navigation
+    login_link = f"""
+      <a href="{auth_url}" target="_self"
+         style="font-size:18px; color:#1DB954; text-decoration:none;">
+        🎵 Log in with Spotify
+      </a>
     """
-    components.html(js, height=0)
+    st.markdown(login_link, unsafe_allow_html=True)
     st.stop()
 
 # Input for user's mood
