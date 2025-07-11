@@ -120,10 +120,18 @@ sp_oauth = SpotifyOAuth(
 
 query_params = st.query_params
 if "code" in query_params and "token_info" not in st.session_state:
-    code = query_params["code"][0]
-    st.write(f"Query parameters received: {query_params}")
-    st.write(f"Redirect URI used: {sp_redirect_uri}")
+    code = query_params["code"]
+     # ↓↓  NEW: build the exact payload Spotipy will POST  ↓↓
+    payload = {
+        "grant_type": "authorization_code",
+        "code": code,
+        "redirect_uri": sp_oauth.redirect_uri,
+        "client_id": sp_client_id,
+        "client_secret": sp_client_secret,
+    }
+    st.write("🔬 token-exchange payload", payload)
     try:
+        
         token_info = sp_oauth.get_access_token(code)
         access_token = token_info["access_token"]
         sp = spotipy.Spotify(auth=access_token)
@@ -140,6 +148,7 @@ if "token_info" in st.session_state:
         st.session_state["token_info"] = token_info
     sp = spotipy.Spotify(auth=token_info["access_token"])
 else:
+    st.write("🔍 sp_oauth.redirect_uri =", repr(sp_oauth.redirect_uri))
     auth_url = sp_oauth.get_authorize_url()
     # Open in a new tab so nothing is ever sandboxed:
     login_link = f'''
