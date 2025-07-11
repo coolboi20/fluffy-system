@@ -4,6 +4,9 @@ import json
 import os
 from typing import Any, Dict, List
 
+import spotipy
+from spotipy.oauth2 import SpotifyOAuth
+
 from openai import OpenAI
 import streamlit as st
 import re
@@ -28,34 +31,60 @@ def generate_playlist(mood: str, api_key: str) -> Dict[str, Any]:
     ]
 
     response = client.chat.completions.create(
-    model="gpt-4o",
-    messages=messages,
-    temperature=0.7,
+        model="gpt-4o",
+        messages=messages,
+        temperature=0.7,
     )
 
     content = response.choices[0].message.content
 
     # Remove code fences if present
     if content.startswith("```"):
-        content = re.sub(r"^```.*?\n", "", content)  # remove opening ```json or ```
-        content = re.sub(r"\n```$", "", content)     # remove closing ```
+        content = re.sub(r"^```.*?\n", "", content)
+        content = re.sub(r"\n```$", "", content)
         content = content.strip()
 
-     # Extract JSON using regex in case GPT includes extra text or code fences
+    # Extract JSON portion in case GPT adds extra text
     json_match = re.search(r"\{.*\}", content, re.DOTALL)
-    if json_match:
-        json_content = json_match.group(0)
-    else:
-        json_content = content
+    json_content = json_match.group(0) if json_match else content
 
     try:
-        playlist = json.loads(content)
+        return json.loads(json_content)
     except json.JSONDecodeError:
-        st.error("Failed to parse playlist data from OpenAI response. Displaying raw output for debugging:")
+        st.error(
+            "Failed to parse playlist data from OpenAI response. Displaying raw output for debugging:"
+        )
         st.code(content)
         return {"title": "", "description": "", "songs": []}
 
-    return playlist
+
+def create_spotify_playlist(sp: spotipy.Spotify, playlist: Dict[str, Any]) -> str:
+    """Create a Spotify playlist and add tracks from the AI-generated list.
+
+    Returns the external Spotify URL of the created playlist.
+    """
+
+    user_id = sp.current_user()["id"]
+
+    new_playlist = sp.user_playlist_create(
+        user_id,
+        playlist.get("title", "New Playlist"),
+        public=False,
+        description=playlist.get("description", ""),
+    )
+
+    track_uris: List[str] = []
+    for track in playlist.get("songs", []):
+        query = f"track:{track['title']} artist:{track['artist']}"
+        results = sp.search(q=query, type="track", limit=1)
+        items = results.get("tracks", {}).get("items", [])
+        if items:
+            track_uris.append(items[0]["uri"])
+
+    if track_uris:
+        sp.playlist_add_items(new_playlist["id"], track_uris)
+
+    return new_playlist["external_urls"]["spotify"]
 
 
 # Streamlit app UI
@@ -65,6 +94,40 @@ st.title("AI Mood-Based Playlist Generator")
 api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
     st.error("OPENAI_API_KEY is not set. Please configure it in your Streamlit Cloud Secrets.")
+    st.stop()
+
+# Spotify authentication setup
+sp_client_id = os.getenv("SPOTIPY_CLIENT_ID")
+sp_client_secret = os.getenv("SPOTIPY_CLIENT_SECRET")
+sp_redirect_uri = os.getenv("SPOTIPY_REDIRECT_URI")
+
+if not all([sp_client_id, sp_client_secret, sp_redirect_uri]):
+    st.error("Spotify client credentials are not configured in the environment.")
+    st.stop()
+
+sp_oauth = SpotifyOAuth(
+    client_id=sp_client_id,
+    client_secret=sp_client_secret,
+    redirect_uri=sp_redirect_uri,
+    scope="playlist-modify-public playlist-modify-private user-read-private",
+    show_dialog=True,
+)
+
+query_params = st.experimental_get_query_params()
+if "code" in query_params and "token_info" not in st.session_state:
+    token_info = sp_oauth.get_access_token(query_params["code"][0])
+    st.session_state["token_info"] = token_info
+    st.experimental_set_query_params()
+
+if "token_info" in st.session_state:
+    token_info = st.session_state["token_info"]
+    if sp_oauth.is_token_expired(token_info):
+        token_info = sp_oauth.refresh_access_token(token_info["refresh_token"])
+        st.session_state["token_info"] = token_info
+    sp = spotipy.Spotify(auth=token_info["access_token"])
+else:
+    auth_url = sp_oauth.get_authorize_url()
+    st.markdown(f"[Log in with Spotify]({auth_url})")
     st.stop()
 
 # Input for user's mood
@@ -87,7 +150,6 @@ if st.button("Generate Playlist"):
         for idx, track in enumerate(playlist.get("songs", []), start=1):
             st.write(f"{idx}. **{track['title']}** - {track['artist']}")
 
-        st.markdown(
-            "\n---\n*Placeholder: Integrate Spotify API via spotipy here to create the playlist on Spotify.*"
-        )
+        playlist_url = create_spotify_playlist(sp, playlist)
+        st.success(f"Playlist created on Spotify! [Open Playlist]({playlist_url})")
 
