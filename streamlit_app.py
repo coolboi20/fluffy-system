@@ -121,11 +121,15 @@ sp_oauth = SpotifyOAuth(
 query_params = st.query_params
 if "code" in query_params and "token_info" not in st.session_state:
     code = query_params["code"][0]
-    token_info = sp_oauth.get_access_token(code=code, as_dict=True)
-    access_token = token_info["access_token"]
-    sp = spotipy.Spotify(auth=access_token)
-    st.session_state["token_info"] = token_info
-    st.query_params.clear()
+    try:
+        token_info = sp_oauth.get_access_token(code)
+        access_token = token_info["access_token"]
+        sp = spotipy.Spotify(auth=access_token)
+        st.session_state["token_info"] = token_info
+        st.query_params.clear()
+    except Exception as e:
+        st.error(f"Spotify OAuth failed: {e}")
+        st.stop()
 
 if "token_info" in st.session_state:
     token_info = st.session_state["token_info"]
