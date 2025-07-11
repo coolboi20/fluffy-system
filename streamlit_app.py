@@ -4,14 +4,15 @@ import json
 import os
 from typing import Any, Dict, List
 
-import openai
+from openai import OpenAI
 import streamlit as st
+import re
 
 
 def generate_playlist(mood: str, api_key: str) -> Dict[str, Any]:
     """Call OpenAI to create a playlist for the given mood."""
 
-    openai.api_key = api_key
+    client = OpenAI(api_key=api_key)
 
     messages = [
         {
@@ -20,24 +21,32 @@ def generate_playlist(mood: str, api_key: str) -> Dict[str, Any]:
                 "You create short music playlists. Respond strictly in JSON with "
                 "the keys 'title', 'description' and 'songs'. 'songs' must be a "
                 "list of objects containing 'title' and 'artist'. Include 10 to "
-                "15 songs."
+                "15 songs. Do not add any explanation or extra text."
             ),
         },
         {"role": "user", "content": f"Generate a playlist for the mood: {mood}"},
     ]
 
-    response = openai.ChatCompletion.create(
-        model="gpt-4o",
-        messages=messages,
-        temperature=0.7,
+    response = client.chat.completions.create(
+    model="gpt-4o",
+    messages=messages,
+    temperature=0.7,
     )
 
-    content = response["choices"][0]["message"]["content"]
+    content = response.choices[0].message.content
+
+     # Extract JSON using regex in case GPT includes extra text or code fences
+    json_match = re.search(r"\{.*\}", content, re.DOTALL)
+    if json_match:
+        json_content = json_match.group(0)
+    else:
+        json_content = content
 
     try:
         playlist = json.loads(content)
     except json.JSONDecodeError:
-        st.error("Failed to parse playlist data from OpenAI response.")
+        st.error("Failed to parse playlist data from OpenAI response. Displaying raw output for debugging:")
+        st.code(content)
         return {"title": "", "description": "", "songs": []}
 
     return playlist
