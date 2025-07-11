@@ -69,17 +69,22 @@ def create_spotify_playlist(sp: spotipy.Spotify, playlist: Dict[str, Any]) -> st
     new_playlist = sp.user_playlist_create(
         user_id,
         playlist.get("title", "New Playlist"),
-        public=False,
+        public=True,
         description=playlist.get("description", ""),
     )
 
     track_uris: List[str] = []
     for track in playlist.get("songs", []):
         query = f"track:{track['title']} artist:{track['artist']}"
-        results = sp.search(q=query, type="track", limit=1)
-        items = results.get("tracks", {}).get("items", [])
-        if items:
-            track_uris.append(items[0]["uri"])
+        try:
+            results = sp.search(q=query, type="track", limit=1)
+            items = results.get("tracks", {}).get("items", [])
+            if items:
+                track_uris.append(items[0]["uri"])
+            else:
+                st.warning(f"Track not found on Spotify: {track['title']} - {track['artist']}")
+        except Exception as e:
+            st.warning(f"Error searching for track: {track['title']} - {track['artist']} ({e})")
 
     if track_uris:
         sp.playlist_add_items(new_playlist["id"], track_uris)
@@ -115,9 +120,12 @@ sp_oauth = SpotifyOAuth(
 
 query_params = st.query_params
 if "code" in query_params and "token_info" not in st.session_state:
-    token_info = sp_oauth.get_access_token(query_params["code"][0])
+    code = query_params["code"][0]
+    token_info = sp_oauth.get_access_token(code=code, as_dict=True)
+    access_token = token_info["access_token"]
+    sp = spotipy.Spotify(auth=access_token)
     st.session_state["token_info"] = token_info
-    st.experimental_set_query_params()
+    st.query_params.clear()
 
 if "token_info" in st.session_state:
     token_info = st.session_state["token_info"]
@@ -150,6 +158,7 @@ if st.button("Generate Playlist"):
         for idx, track in enumerate(playlist.get("songs", []), start=1):
             st.write(f"{idx}. **{track['title']}** - {track['artist']}")
 
-        playlist_url = create_spotify_playlist(sp, playlist)
+        with st.spinner("Creating playlist on Spotify..."):
+            playlist_url = create_spotify_playlist(sp, playlist)
         st.success(f"Playlist created on Spotify! [Open Playlist]({playlist_url})")
 
