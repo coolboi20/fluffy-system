@@ -10,6 +10,7 @@ from spotipy.oauth2 import SpotifyOAuth
 from openai import OpenAI
 import streamlit as st
 import re
+import streamlit.components.v1 as components
 
 
 def generate_playlist(mood: str, api_key: str) -> Dict[str, Any]:
@@ -141,13 +142,13 @@ if "token_info" in st.session_state:
     sp = spotipy.Spotify(auth=token_info["access_token"])
 else:
     auth_url = sp_oauth.get_authorize_url()
-    # Use an HTML link with target="_self" so it opens in the same tab
-    login_html = f'''
-        <a href="{auth_url}" target="_self" style="color:#1DB954; text-decoration:none; font-size:18px;">
-            🎵 Log in with Spotify
-        </a>
-    '''
-    st.markdown(login_html, unsafe_allow_html=True)
+    # Immediately redirect the browser to Spotify’s login page
+    js = f"""
+    <script>
+      window.location.href = "{auth_url}";
+    </script>
+    """
+    components.html(js, height=0)
     st.stop()
 
 # Input for user's mood
