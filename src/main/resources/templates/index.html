@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>AI Mood-Based Playlist Generator</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; line-height: 1.6; }
+        .success { color: #1DB954; font-weight: bold; }
+        .error { color: #e91e63; font-weight: bold; }
+        .track-list { list-style: none; padding: 0; }
+        .track-item { margin-bottom: 5px; }
+        .btn { background-color: #1DB954; color: white; border: none; padding: 10px 20px; text-decoration: none; display: inline-block; border-radius: 20px; cursor: pointer; font-size: 16px; }
+        .btn:hover { background-color: #1ed760; }
+        input[type="text"] { width: 100%; padding: 10px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+    <h1>AI Mood-Based Playlist Generator</h1>
+
+    <div th:if="${error}" class="error">
+        <p th:text="${error}"></p>
+    </div>
+
+    <div th:if="${success}" class="success">
+        <p th:text="${success}"></p>
+        <p th:if="${playlistUrl}"><a th:href="${playlistUrl}" target="_blank">Open Playlist on Spotify</a></p>
+    </div>
+
+    <div th:if="${authUrl}">
+        <p>Please log in to Spotify to continue:</p>
+        <a th:href="${authUrl}" class="btn">🎵 Log in with Spotify</a>
+    </div>
+
+    <div th:unless="${authUrl}">
+        <form th:action="@{/generate}" method="post">
+            <label for="mood">Describe your current mood or vibe:</label>
+            <input type="text" id="mood" name="mood" th:value="${mood}" placeholder="e.g. upbeat summer hits, melancholy rainy day..." required>
+            <button type="submit" class="btn">Generate Playlist</button>
+        </form>
+
+        <div th:if="${playlist}">
+            <h2 th:text="${playlist.title}"></h2>
+            <p th:text="${playlist.description}"></p>
+
+            <h3>Track List:</h3>
+            <ul class="track-list">
+                <li th:each="song, iter : ${playlist.songs}" class="track-item">
+                    <span th:text="${iter.index + 1} + '. '"></span>
+                    <strong th:text="${song.title}"></strong> - <span th:text="${song.artist}"></span>
+                </li>
+            </ul>
+
+            <form th:action="@{/create-spotify}" method="post">
+                <button type="submit" class="btn">Create on Spotify</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
