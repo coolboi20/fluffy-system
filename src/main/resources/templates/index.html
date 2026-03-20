@@ -12,6 +12,11 @@
         .btn:hover { background-color: #1ed760; }
         .btn-small { background-color: #1DB954; color: white; border: none; padding: 4px 12px; text-decoration: none; display: inline-block; border-radius: 12px; cursor: pointer; font-size: 12px; margin-left: 10px; vertical-align: middle; }
         .btn-small:hover { background-color: #1ed760; }
+        .btn-yt { background-color: #FF0000; color: white; border: none; padding: 4px 12px; text-decoration: none; display: inline-block; border-radius: 12px; cursor: pointer; font-size: 12px; margin-left: 10px; vertical-align: middle; }
+        .btn-yt:hover { background-color: #CC0000; }
+        .btn-remove { background-color: #ff4d4d; color: white; border: none; padding: 4px 12px; border-radius: 12px; cursor: pointer; font-size: 12px; margin-left: 10px; vertical-align: middle; }
+        .btn-remove:hover { background-color: #ff1a1a; }
+        .track-img { width: 40px; height: 40px; border-radius: 4px; vertical-align: middle; margin-right: 10px; }
         input[type="text"], input[type="file"] { width: 100%; padding: 10px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
         label { display: block; margin-bottom: 5px; font-weight: bold; }
     </style>
@@ -51,10 +56,17 @@
             <h3>Track List:</h3>
             <ul class="track-list">
                 <li th:each="song, iter : ${playlist.songs}" class="track-item">
+                    <img th:if="${song.imageUrl}" th:src="${song.imageUrl}" class="track-img">
                     <span th:text="${iter.index + 1} + '. '"></span>
                     <strong th:text="${song.title}"></strong> - <span th:text="${song.artist}"></span>
                     
                     <a th:if="${song.spotifyUrl}" th:href="${song.spotifyUrl}" target="_blank" class="btn-small">Preview on Spotify</a>
+                    <a th:if="${song.youtubeMusicUrl}" th:href="${song.youtubeMusicUrl}" target="_blank" class="btn-yt">YouTube Music</a>
+                    
+                    <form th:action="@{/remove-song}" method="post" style="display: inline;">
+                        <input type="hidden" name="index" th:value="${iter.index}">
+                        <button type="submit" class="btn-remove">Remove</button>
+                    </form>
                     
                     <audio th:if="${song.previewUrl}" controls style="height: 30px; vertical-align: middle; margin-left: 10px;">
                         <source th:src="${song.previewUrl}" type="audio/mpeg">

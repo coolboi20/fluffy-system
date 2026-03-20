@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @WebMvcTest(controllers = FluffyController.class)
 @org.springframework.test.context.ContextConfiguration(classes = FluffyApplication.class)
@@ -69,7 +70,8 @@ class FluffyControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("index"))
                 .andExpect(model().attribute("playlist", playlistResponse))
-                .andExpect(request().sessionAttribute("lastPlaylist", playlistResponse));
+                .andExpect(request().sessionAttribute("lastPlaylist", playlistResponse))
+                .andExpect(request().sessionAttribute("lastMood", "happy"));
         
         org.mockito.Mockito.verify(spotifyService).enrichWithTrackMetadata(eq("test-access-token"), any(PlaylistResponse.class));
     }
@@ -101,10 +103,41 @@ class FluffyControllerTest {
 
         mockMvc.perform(post("/create-spotify")
                         .sessionAttr("accessToken", "test-access-token")
-                        .sessionAttr("lastPlaylist", playlistResponse))
+                        .sessionAttr("lastPlaylist", playlistResponse)
+                        .sessionAttr("lastMood", "happy"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("index"))
                 .andExpect(model().attribute("playlistUrl", "http://playlist-url"))
+                .andExpect(model().attribute("mood", "happy"))
                 .andExpect(model().attribute("success", "Playlist created on Spotify!"));
+    }
+
+    @Test
+    void testRemoveSongSuccess() throws Exception {
+        PlaylistResponse playlistResponse = new PlaylistResponse();
+        java.util.List<PlaylistResponse.Song> songs = new java.util.ArrayList<>();
+        songs.add(new PlaylistResponse.Song("Song 1", "Artist 1"));
+        songs.add(new PlaylistResponse.Song("Song 2", "Artist 2"));
+        playlistResponse.setSongs(songs);
+
+        mockMvc.perform(post("/remove-song")
+                        .param("index", "0")
+                        .sessionAttr("accessToken", "test-access-token")
+                        .sessionAttr("lastPlaylist", playlistResponse)
+                        .sessionAttr("lastMood", "happy"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("index"))
+                .andExpect(model().attribute("playlist", playlistResponse))
+                .andExpect(model().attribute("mood", "happy"));
+
+        assertEquals(1, playlistResponse.getSongs().size());
+        assertEquals("Song 2", playlistResponse.getSongs().get(0).getTitle());
+    }
+
+    @Test
+    void testRemoveSongWithoutSession() throws Exception {
+        mockMvc.perform(post("/remove-song").param("index", "0"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/"));
     }
 }

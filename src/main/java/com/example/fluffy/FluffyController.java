@@ -56,6 +56,7 @@ public class FluffyController {
             spotifyService.enrichWithTrackMetadata(accessToken, playlist);
             model.addAttribute("playlist", playlist);
             session.setAttribute("lastPlaylist", playlist);
+            session.setAttribute("lastMood", mood);
             model.addAttribute("mood", mood);
         } catch (Exception e) {
             model.addAttribute("error", "Failed to generate playlist: " + e.getMessage());
@@ -68,6 +69,7 @@ public class FluffyController {
     public String createSpotify(HttpSession session, Model model) {
         String accessToken = (String) session.getAttribute("accessToken");
         PlaylistResponse playlist = (PlaylistResponse) session.getAttribute("lastPlaylist");
+        String mood = (String) session.getAttribute("lastMood");
 
         if (accessToken == null || playlist == null) {
             return "redirect:/";
@@ -77,11 +79,34 @@ public class FluffyController {
             String playlistUrl = spotifyService.createPlaylist(accessToken, playlist);
             model.addAttribute("playlistUrl", playlistUrl);
             model.addAttribute("playlist", playlist);
+            model.addAttribute("mood", mood);
             model.addAttribute("success", "Playlist created on Spotify!");
         } catch (Exception e) {
             model.addAttribute("error", "Failed to create Spotify playlist: " + e.getMessage());
             model.addAttribute("playlist", playlist);
+            model.addAttribute("mood", mood);
         }
+
+        return "index";
+    }
+
+    @PostMapping("/remove-song")
+    public String removeSong(HttpSession session, Model model, @RequestParam("index") int index) {
+        String accessToken = (String) session.getAttribute("accessToken");
+        PlaylistResponse playlist = (PlaylistResponse) session.getAttribute("lastPlaylist");
+        String mood = (String) session.getAttribute("lastMood");
+
+        if (accessToken == null || playlist == null) {
+            return "redirect:/";
+        }
+
+        if (index >= 0 && index < playlist.getSongs().size()) {
+            playlist.getSongs().remove(index);
+            session.setAttribute("lastPlaylist", playlist);
+        }
+
+        model.addAttribute("playlist", playlist);
+        model.addAttribute("mood", mood);
 
         return "index";
     }

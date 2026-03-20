@@ -1,5 +1,6 @@
 package com.example.fluffy;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import se.michaelthelin.spotify.SpotifyApi;
@@ -9,6 +10,8 @@ import se.michaelthelin.spotify.model_objects.specification.Track;
 import se.michaelthelin.spotify.model_objects.specification.User;
 
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,6 +26,9 @@ public class SpotifyService {
 
     @Value("${SPOTIPY_REDIRECT_URI}")
     private String redirectUri;
+
+    @Autowired
+    private DeezerService deezerService;
 
     public SpotifyApi getSpotifyApi(String accessToken) {
         return new SpotifyApi.Builder()
@@ -49,13 +55,23 @@ public class SpotifyService {
 
         List<String> trackUris = new ArrayList<>();
         for (PlaylistResponse.Song song : playlistData.getSongs()) {
-            String query = "track:" + song.getTitle() + " artist:" + song.getArtist();
-            Paging<Track> searchResult = spotifyApi.searchTracks(query).limit(1).build().execute();
-            if (searchResult.getItems().length > 0) {
-                Track track = searchResult.getItems()[0];
-                trackUris.add(track.getUri());
-                song.setPreviewUrl(track.getPreviewUrl());
-                song.setSpotifyUrl(track.getExternalUrls().get("spotify"));
+            if (song.getSpotifyUri() != null) {
+                trackUris.add(song.getSpotifyUri());
+            } else {
+                // In case it wasn't enriched, search now
+                String query = "track:" + song.getTitle() + " artist:" + song.getArtist();
+                Paging<Track> searchResult = spotifyApi.searchTracks(query).limit(1).build().execute();
+                if (searchResult.getItems().length > 0) {
+                    Track track = searchResult.getItems()[0];
+                    song.setSpotifyUri(track.getUri());
+                    trackUris.add(track.getUri());
+                    song.setPreviewUrl(track.getPreviewUrl());
+                    song.setSpotifyUrl(track.getExternalUrls().get("spotify"));
+                    
+                    if (track.getAlbum().getImages().length > 0) {
+                        song.setImageUrl(track.getAlbum().getImages()[0].getUrl());
+                    }
+                }
             }
         }
 
@@ -76,9 +92,25 @@ public class SpotifyService {
             Paging<Track> searchResult = spotifyApi.searchTracks(query).limit(1).build().execute();
             if (searchResult.getItems().length > 0) {
                 Track track = searchResult.getItems()[0];
+                song.setSpotifyUri(track.getUri());
                 song.setPreviewUrl(track.getPreviewUrl());
                 song.setSpotifyUrl(track.getExternalUrls().get("spotify"));
+                
+                // Add Album Art
+                if (track.getAlbum().getImages().length > 0) {
+                    song.setImageUrl(track.getAlbum().getImages()[0].getUrl());
+                }
+
+                // Fallback: If Spotify has no preview, ask Deezer
+                if (song.getPreviewUrl() == null) {
+                    song.setPreviewUrl(deezerService.getPreviewUrl(song.getArtist(), song.getTitle()));
+                }
             }
+
+            // Always add a YouTube Music search link as a "Full Version" alternative
+            String ytSearch = "https://music.youtube.com/search?q=" + 
+                URLEncoder.encode(song.getArtist() + " " + song.getTitle(), StandardCharsets.UTF_8);
+            song.setYoutubeMusicUrl(ytSearch);
         }
     }
 

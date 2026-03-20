@@ -27,6 +27,9 @@ public class PlaylistResponse {
         private String artist;
         private String previewUrl;
         private String spotifyUrl;
+        private String imageUrl;
+        private String youtubeMusicUrl;
+        private String spotifyUri;
 
         public Song() {}
 
@@ -56,5 +59,11 @@ public class PlaylistResponse {
         public void setPreviewUrl(String previewUrl) { this.previewUrl = previewUrl; }
         public String getSpotifyUrl() { return spotifyUrl; }
         public void setSpotifyUrl(String spotifyUrl) { this.spotifyUrl = spotifyUrl; }
+        public String getImageUrl() { return imageUrl; }
+        public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+        public String getYoutubeMusicUrl() { return youtubeMusicUrl; }
+        public void setYoutubeMusicUrl(String youtubeMusicUrl) { this.youtubeMusicUrl = youtubeMusicUrl; }
+        public String getSpotifyUri() { return spotifyUri; }
+        public void setSpotifyUri(String spotifyUri) { this.spotifyUri = spotifyUri; }
     }
 }
