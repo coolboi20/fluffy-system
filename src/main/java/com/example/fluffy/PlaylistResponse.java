@@ -25,6 +25,8 @@ public class PlaylistResponse {
     public static class Song {
         private String title;
         private String artist;
+        private String previewUrl;
+        private String spotifyUrl;
 
         public Song() {}
 
@@ -33,9 +35,26 @@ public class PlaylistResponse {
             this.artist = artist;
         }
 
+        public Song(String title, String artist, String previewUrl) {
+            this.title = title;
+            this.artist = artist;
+            this.previewUrl = previewUrl;
+        }
+
+        public Song(String title, String artist, String previewUrl, String spotifyUrl) {
+            this.title = title;
+            this.artist = artist;
+            this.previewUrl = previewUrl;
+            this.spotifyUrl = spotifyUrl;
+        }
+
         public String getTitle() { return title; }
         public void setTitle(String title) { this.title = title; }
         public String getArtist() { return artist; }
         public void setArtist(String artist) { this.artist = artist; }
+        public String getPreviewUrl() { return previewUrl; }
+        public void setPreviewUrl(String previewUrl) { this.previewUrl = previewUrl; }
+        public String getSpotifyUrl() { return spotifyUrl; }
+        public void setSpotifyUrl(String spotifyUrl) { this.spotifyUrl = spotifyUrl; }
     }
 }

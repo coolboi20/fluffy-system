@@ -7,12 +7,13 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
 @Controller
 public class FluffyController {
 
     @Autowired
-    private OpenAiService openAiService;
+    private GeminiService geminiService;
 
     @Autowired
     private SpotifyService spotifyService;
@@ -37,14 +38,22 @@ public class FluffyController {
     }
 
     @PostMapping("/generate")
-    public String generate(HttpSession session, Model model, @RequestParam("mood") String mood) {
+    public String generate(HttpSession session, Model model, 
+                           @RequestParam(value = "mood", required = false) String mood,
+                           @RequestParam(value = "image", required = false) MultipartFile image) {
         String accessToken = (String) session.getAttribute("accessToken");
         if (accessToken == null) {
             return "redirect:/";
         }
 
         try {
-            PlaylistResponse playlist = openAiService.generatePlaylist(mood);
+            PlaylistResponse playlist;
+            if (image != null && !image.isEmpty()) {
+                playlist = geminiService.generatePlaylist(mood, image.getBytes(), image.getContentType());
+            } else {
+                playlist = geminiService.generatePlaylist(mood);
+            }
+            spotifyService.enrichWithTrackMetadata(accessToken, playlist);
             model.addAttribute("playlist", playlist);
             session.setAttribute("lastPlaylist", playlist);
             model.addAttribute("mood", mood);

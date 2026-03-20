@@ -3,16 +3,15 @@ package com.example.fluffy;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import org.springframework.mock.web.MockMultipartFile;
 import java.net.URI;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = FluffyController.class)
@@ -22,10 +21,10 @@ class FluffyControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
-    private OpenAiService openAiService;
+    @MockitoBean
+    private GeminiService geminiService;
 
-    @MockBean
+    @MockitoBean
     private SpotifyService spotifyService;
 
     @Test
@@ -61,15 +60,38 @@ class FluffyControllerTest {
     void testGenerateWithAccessToken() throws Exception {
         PlaylistResponse playlistResponse = new PlaylistResponse();
         playlistResponse.setTitle("Happy Playlist");
-        when(openAiService.generatePlaylist("happy")).thenReturn(playlistResponse);
+        playlistResponse.setSongs(java.util.Collections.emptyList());
+        when(geminiService.generatePlaylist("happy")).thenReturn(playlistResponse);
 
-        mockMvc.perform(post("/generate")
+        mockMvc.perform(multipart("/generate")
                         .param("mood", "happy")
                         .sessionAttr("accessToken", "test-access-token"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("index"))
                 .andExpect(model().attribute("playlist", playlistResponse))
                 .andExpect(request().sessionAttribute("lastPlaylist", playlistResponse));
+        
+        org.mockito.Mockito.verify(spotifyService).enrichWithTrackMetadata(eq("test-access-token"), any(PlaylistResponse.class));
+    }
+
+    @Test
+    void testGenerateWithImage() throws Exception {
+        PlaylistResponse playlistResponse = new PlaylistResponse();
+        playlistResponse.setTitle("Image Playlist");
+        playlistResponse.setSongs(java.util.Collections.emptyList());
+        MockMultipartFile imageFile = new MockMultipartFile("image", "test.png", "image/png", "test content".getBytes());
+        
+        when(geminiService.generatePlaylist(anyString(), any(byte[].class), anyString())).thenReturn(playlistResponse);
+
+        mockMvc.perform(multipart("/generate")
+                        .file(imageFile)
+                        .param("mood", "vibe")
+                        .sessionAttr("accessToken", "test-access-token"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("index"))
+                .andExpect(model().attribute("playlist", playlistResponse));
+        
+        org.mockito.Mockito.verify(spotifyService).enrichWithTrackMetadata(eq("test-access-token"), any(PlaylistResponse.class));
     }
 
     @Test

@@ -68,6 +68,10 @@ class SpotifyServiceTest {
 
         Track track = mock(Track.class);
         when(track.getUri()).thenReturn("track-uri");
+        when(track.getPreviewUrl()).thenReturn("http://preview-url");
+        ExternalUrl trackExternalUrl = mock(ExternalUrl.class);
+        when(trackExternalUrl.get("spotify")).thenReturn("http://track-spotify-url");
+        when(track.getExternalUrls()).thenReturn(trackExternalUrl);
         Paging<Track> searchResult = mock(Paging.class);
         when(searchResult.getItems()).thenReturn(new Track[]{track});
 
@@ -85,7 +89,39 @@ class SpotifyServiceTest {
 
         // Assert
         assertEquals("http://playlist-url", result);
+        assertEquals("http://preview-url", song.getPreviewUrl());
+        assertEquals("http://track-spotify-url", song.getSpotifyUrl());
         verify(spotifyApi).createPlaylist("user-id", "Test Playlist");
         verify(spotifyApi).addItemsToPlaylist(eq("playlist-id"), any(String[].class));
+    }
+
+    @Test
+    void testEnrichWithTrackMetadata() throws Exception {
+        // Arrange
+        PlaylistResponse playlistData = new PlaylistResponse();
+        PlaylistResponse.Song song = new PlaylistResponse.Song();
+        song.setTitle("Song 1");
+        song.setArtist("Artist 1");
+        playlistData.setSongs(Collections.singletonList(song));
+
+        Track track = mock(Track.class);
+        when(track.getPreviewUrl()).thenReturn("http://preview-url");
+        ExternalUrl trackExternalUrl = mock(ExternalUrl.class);
+        when(trackExternalUrl.get("spotify")).thenReturn("http://track-spotify-url");
+        when(track.getExternalUrls()).thenReturn(trackExternalUrl);
+        Paging<Track> searchResult = mock(Paging.class);
+        when(searchResult.getItems()).thenReturn(new Track[]{track});
+
+        when(spotifyApi.searchTracks(anyString())
+                .limit(anyInt())
+                .build()
+                .execute()).thenReturn(searchResult);
+
+        // Act
+        spotifyService.enrichWithTrackMetadata(spotifyApi, playlistData);
+
+        // Assert
+        assertEquals("http://preview-url", song.getPreviewUrl());
+        assertEquals("http://track-spotify-url", song.getSpotifyUrl());
     }
 }

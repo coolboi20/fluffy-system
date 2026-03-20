@@ -52,7 +52,10 @@ public class SpotifyService {
             String query = "track:" + song.getTitle() + " artist:" + song.getArtist();
             Paging<Track> searchResult = spotifyApi.searchTracks(query).limit(1).build().execute();
             if (searchResult.getItems().length > 0) {
-                trackUris.add(searchResult.getItems()[0].getUri());
+                Track track = searchResult.getItems()[0];
+                trackUris.add(track.getUri());
+                song.setPreviewUrl(track.getPreviewUrl());
+                song.setSpotifyUrl(track.getExternalUrls().get("spotify"));
             }
         }
 
@@ -61,6 +64,22 @@ public class SpotifyService {
         }
 
         return playlist.getExternalUrls().get("spotify");
+    }
+
+    public void enrichWithTrackMetadata(String accessToken, PlaylistResponse playlist) throws Exception {
+        enrichWithTrackMetadata(getSpotifyApi(accessToken), playlist);
+    }
+
+    public void enrichWithTrackMetadata(SpotifyApi spotifyApi, PlaylistResponse playlist) throws Exception {
+        for (PlaylistResponse.Song song : playlist.getSongs()) {
+            String query = "track:" + song.getTitle() + " artist:" + song.getArtist();
+            Paging<Track> searchResult = spotifyApi.searchTracks(query).limit(1).build().execute();
+            if (searchResult.getItems().length > 0) {
+                Track track = searchResult.getItems()[0];
+                song.setPreviewUrl(track.getPreviewUrl());
+                song.setSpotifyUrl(track.getExternalUrls().get("spotify"));
+            }
+        }
     }
 
     public URI getAuthorizationUri() {
