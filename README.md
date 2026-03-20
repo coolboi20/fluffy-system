@@ -19,8 +19,10 @@ Set the following environment variables:
 $env:SPOTIPY_CLIENT_ID="your_client_id"
 $env:SPOTIPY_CLIENT_SECRET="your_client_secret"
 $env:SPOTIPY_REDIRECT_URI="http://localhost:8501/"
-$env:GEMINI_API_KEY="your_gemini_api_key"
+$env:GEMINI_API_KEY="your_actual_new_key_here"
 ```
+
+> **Warning:** Your previous `GEMINI_API_KEY` was reported as leaked and revoked by Google. You MUST generate a new one at [Google AI Studio](https://aistudio.google.com/) to continue using the AI features.
 
 ### From the CLI (Recommended for Java 26)
 

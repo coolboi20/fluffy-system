@@ -1,82 +1,357 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>AI Mood-Based Playlist Generator</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fluffy - AI Mood-Based Music Studio</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; line-height: 1.6; }
-        .success { color: #1DB954; font-weight: bold; }
-        .error { color: #e91e63; font-weight: bold; }
+        :root {
+            --bg-color: #121212;
+            --card-bg: #181818;
+            --card-hover: #282828;
+            --primary: #1DB954;
+            --primary-hover: #1ed760;
+            --text-main: #FFFFFF;
+            --text-sub: #B3B3B3;
+            --error: #e91e63;
+            --accent: #6200ee;
+            --yt-red: #FF0000;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        h2, h3, h4 { color: var(--text-main); margin-top: 0; }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            transition: transform 0.2s ease;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .success { background-color: rgba(29, 185, 84, 0.2); color: var(--primary); border: 1px solid var(--primary); }
+        .error { background-color: rgba(233, 30, 99, 0.2); color: var(--error); border: 1px solid var(--error); }
+
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-sub); }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px 16px;
+            background-color: #3e3e3e;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            color: white;
+            font-size: 16px;
+            outline: none;
+            transition: background-color 0.2s, border 0.2s;
+        }
+        input[type="text"]:focus, textarea:focus {
+            background-color: #4a4a4a;
+            border-color: var(--primary);
+        }
+
+        input[type="file"] {
+            color: var(--text-sub);
+            padding: 10px 0;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 28px;
+            border-radius: 500px;
+            font-weight: 700;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            min-width: 160px;
+        }
+
+        .btn-primary { background-color: var(--primary); color: black; }
+        .btn-primary:hover { transform: scale(1.04); background-color: var(--primary-hover); }
+
+        .btn-accent { background-color: var(--accent); color: white; }
+        .btn-accent:hover { transform: scale(1.04); opacity: 0.9; }
+
+        .btn-small {
+            padding: 6px 16px;
+            font-size: 12px;
+            border-radius: 500px;
+            min-width: auto;
+        }
+
+        .btn-spotify { background-color: #1DB954; color: black; }
+        .btn-yt { background-color: var(--yt-red); color: white; }
+        .btn-remove { background-color: transparent; border: 1px solid #ff4d4d; color: #ff4d4d; }
+        .btn-remove:hover { background-color: #ff4d4d; color: white; }
+
         .track-list { list-style: none; padding: 0; }
-        .track-item { margin-bottom: 5px; }
-        .btn { background-color: #1DB954; color: white; border: none; padding: 10px 20px; text-decoration: none; display: inline-block; border-radius: 20px; cursor: pointer; font-size: 16px; }
-        .btn:hover { background-color: #1ed760; }
-        .btn-small { background-color: #1DB954; color: white; border: none; padding: 4px 12px; text-decoration: none; display: inline-block; border-radius: 12px; cursor: pointer; font-size: 12px; margin-left: 10px; vertical-align: middle; }
-        .btn-small:hover { background-color: #1ed760; }
-        .btn-yt { background-color: #FF0000; color: white; border: none; padding: 4px 12px; text-decoration: none; display: inline-block; border-radius: 12px; cursor: pointer; font-size: 12px; margin-left: 10px; vertical-align: middle; }
-        .btn-yt:hover { background-color: #CC0000; }
-        .btn-remove { background-color: #ff4d4d; color: white; border: none; padding: 4px 12px; border-radius: 12px; cursor: pointer; font-size: 12px; margin-left: 10px; vertical-align: middle; }
-        .btn-remove:hover { background-color: #ff1a1a; }
-        .track-img { width: 40px; height: 40px; border-radius: 4px; vertical-align: middle; margin-right: 10px; }
-        input[type="text"], input[type="file"] { width: 100%; padding: 10px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .track-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border-radius: 8px;
+            transition: background-color 0.2s;
+            margin-bottom: 8px;
+        }
+        .track-item:hover { background-color: var(--card-hover); }
+
+        .track-info { flex-grow: 1; display: flex; align-items: center; gap: 15px; }
+        .track-img { width: 48px; height: 48px; border-radius: 4px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        .track-text { display: flex; flex-direction: column; }
+        .track-title { font-weight: 600; font-size: 1rem; }
+        .track-artist { color: var(--text-sub); font-size: 0.85rem; }
+
+        .track-actions { display: flex; align-items: center; gap: 10px; }
+
+        .prompt-area {
+            font-family: 'Courier New', Courier, monospace;
+            height: 120px;
+            resize: vertical;
+            background-color: #282828;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .lyrics-box {
+            background-color: #222;
+            padding: 20px;
+            border-radius: 8px;
+            font-style: italic;
+            border-left: 4px solid var(--accent);
+            margin: 15px 0;
+            white-space: pre-wrap;
+        }
+
+        audio {
+            height: 32px;
+            width: 180px;
+            filter: invert(100%) hue-rotate(180deg) brightness(1.5) contrast(0.8);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-sub);
+        }
+        .empty-state i { font-size: 4rem; margin-bottom: 20px; color: #333; }
+
+        @media (max-width: 600px) {
+            .track-item { flex-direction: column; align-items: flex-start; }
+            .track-actions { width: 100%; margin-top: 15px; flex-wrap: wrap; }
+            .btn { width: 100%; }
+        }
     </style>
 </head>
 <body>
-    <h1>AI Mood-Based Playlist Generator</h1>
+    <div class="container">
+        <header>
+            <h1><i class="fa-solid fa-wand-magic-sparkles"></i> Fluffy</h1>
+            <p style="color: var(--text-sub);">AI-Powered Music Companion</p>
+        </header>
 
-    <div th:if="${error}" class="error">
-        <p th:text="${error}"></p>
-    </div>
+        <div th:if="${error}" class="alert error">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span th:text="${error}"></span>
+        </div>
 
-    <div th:if="${success}" class="success">
-        <p th:text="${success}"></p>
-        <p th:if="${playlistUrl}"><a th:href="${playlistUrl}" target="_blank">Open Playlist on Spotify</a></p>
-    </div>
+        <div th:if="${success}" class="alert success">
+            <i class="fa-solid fa-circle-check"></i>
+            <div>
+                <span th:text="${success}"></span>
+                <div th:if="${playlistUrl}" style="margin-top: 10px;">
+                    <a th:href="${playlistUrl}" target="_blank" class="btn btn-primary btn-small">
+                        <i class="fa-brands fa-spotify"></i> Open Playlist
+                    </a>
+                </div>
+            </div>
+        </div>
 
-    <div th:if="${authUrl}">
-        <p>Please log in to Spotify to continue:</p>
-        <a th:href="${authUrl}" class="btn">🎵 Log in with Spotify</a>
-    </div>
+        <!-- Auth Section -->
+        <div th:if="${authUrl}" class="card" style="text-align: center;">
+            <p>To start creating, please connect your Spotify account.</p>
+            <a th:href="${authUrl}" class="btn btn-primary">
+                <i class="fa-brands fa-spotify"></i> Log in with Spotify
+            </a>
+        </div>
 
-    <div th:unless="${authUrl}">
-        <form th:action="@{/generate}" method="post" enctype="multipart/form-data">
-            <label for="mood">Describe your current mood or vibe:</label>
-            <input type="text" id="mood" name="mood" th:value="${mood}" placeholder="e.g. upbeat summer hits, melancholy rainy day...">
-            
-            <label for="image">Or upload a picture:</label>
-            <input type="file" id="image" name="image" accept="image/*">
-            
-            <button type="submit" class="btn">Generate Playlist</button>
-        </form>
-
-        <div th:if="${playlist}">
-            <h2 th:text="${playlist.title}"></h2>
-            <p th:text="${playlist.description}"></p>
-
-            <h3>Track List:</h3>
-            <ul class="track-list">
-                <li th:each="song, iter : ${playlist.songs}" class="track-item">
-                    <img th:if="${song.imageUrl}" th:src="${song.imageUrl}" class="track-img">
-                    <span th:text="${iter.index + 1} + '. '"></span>
-                    <strong th:text="${song.title}"></strong> - <span th:text="${song.artist}"></span>
+        <!-- Main Workspace -->
+        <div th:unless="${authUrl}">
+            <div class="card">
+                <form th:action="@{/generate}" method="post" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="mood"><i class="fa-solid fa-face-smile"></i> How are you feeling?</label>
+                        <input type="text" id="mood" name="mood" th:value="${mood}" placeholder="e.g. productive morning, chill lo-fi vibes, summer roadtrip...">
+                    </div>
                     
-                    <a th:if="${song.spotifyUrl}" th:href="${song.spotifyUrl}" target="_blank" class="btn-small">Preview on Spotify</a>
-                    <a th:if="${song.youtubeMusicUrl}" th:href="${song.youtubeMusicUrl}" target="_blank" class="btn-yt">YouTube Music</a>
+                    <div class="form-group">
+                        <label for="image"><i class="fa-solid fa-image"></i> Or share a picture for inspiration:</label>
+                        <input type="file" id="image" name="image" accept="image/*">
+                    </div>
                     
-                    <form th:action="@{/remove-song}" method="post" style="display: inline;">
-                        <input type="hidden" name="index" th:value="${iter.index}">
-                        <button type="submit" class="btn-remove">Remove</button>
+                    <div class="btn-group">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa-solid fa-music"></i> Generate Playlist
+                        </button>
+                        <button type="submit" th:formaction="@{/generate-music}" class="btn btn-accent">
+                            <i class="fa-solid fa-microchip"></i> AI Music Studio
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- AI Music Studio Results -->
+            <div th:if="${music}" class="card" style="border: 1px solid var(--accent);">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                    <i class="fa-solid fa-compact-disc fa-spin" style="color: var(--accent); font-size: 24px;"></i>
+                    <h2 style="margin: 0;">AI Music Studio: <span th:text="${music.title}"></span></h2>
+                </div>
+                
+                <p><strong>Genre/Style:</strong> <span th:text="${music.style}"></span></p>
+                
+                <h4>📝 Lyrics Concept:</h4>
+                <div class="lyrics-box" th:text="${music.lyrics}"></div>
+
+                <div class="card" style="background-color: #121212; margin-bottom: 20px;">
+                    <h4><i class="fa-solid fa-keyboard"></i> Optimized MusicFX Prompt</h4>
+                    <p style="font-size: 0.8rem; color: var(--text-sub); margin-bottom: 12px;">Refine this prompt to adjust the Lyria model's output:</p>
+                    
+                    <form th:action="@{/generate-music-from-prompt}" method="post">
+                        <input type="hidden" name="mood" th:value="${mood}">
+                        <textarea id="fx-prompt" name="musicFXPrompt" class="prompt-area" th:text="${music.musicFXPrompt}"></textarea>
+                        
+                        <div class="btn-group" style="margin-top: 0;">
+                            <button type="button" class="btn btn-small" style="background-color: #333;" onclick="navigator.clipboard.writeText(document.getElementById('fx-prompt').value); this.innerText = 'Copied!'; setTimeout(() => this.innerText = 'Copy Prompt', 2000)">
+                                <i class="fa-solid fa-copy"></i> Copy Prompt
+                            </button>
+                            <button type="submit" class="btn btn-small btn-accent">
+                                <i class="fa-solid fa-arrows-rotate"></i> Regenerate Concept
+                            </button>
+                            <a href="https://aitestkitchen.withgoogle.com/tools/music-fx" target="_blank" class="btn btn-small" style="background-color: #4285f4; color: white;">
+                                <i class="fa-solid fa-external-link"></i> Go to MusicFX
+                            </a>
+                        </div>
                     </form>
-                    
-                    <audio th:if="${song.previewUrl}" controls style="height: 30px; vertical-align: middle; margin-left: 10px;">
-                        <source th:src="${song.previewUrl}" type="audio/mpeg">
-                    </audio>
-                </li>
-            </ul>
+                </div>
 
-            <form th:action="@{/create-spotify}" method="post">
-                <button type="submit" class="btn">Create on Spotify</button>
-            </form>
+                <div th:if="${music.previewUrl}" class="card" style="background-color: rgba(29, 185, 84, 0.05); border: 1px solid rgba(29, 185, 84, 0.2);">
+                    <h4><i class="fa-solid fa-headphones"></i> Musical Direction Inspiration</h4>
+                    <p style="margin-bottom: 15px;">AI suggests a vibe similar to: <strong th:text="${music.referenceTrackTitle} + ' by ' + ${music.referenceTrackArtist}"></strong></p>
+                    <audio controls th:src="${music.previewUrl}"></audio>
+                </div>
+            </div>
+
+            <!-- Playlist Results -->
+            <div th:if="${playlist}" class="card">
+                <h2 th:text="${playlist.title}"></h2>
+                <p th:text="${playlist.description}" style="color: var(--text-sub); margin-bottom: 30px;"></p>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin: 0;"><i class="fa-solid fa-list-ul"></i> Track List</h3>
+                    <span th:text="${playlist.songs != null ? playlist.songs.size() : 0} + ' tracks'" style="color: var(--text-sub); font-size: 0.9rem;"></span>
+                </div>
+
+                <ul class="track-list">
+                    <li th:each="song, iter : ${playlist.songs}" class="track-item">
+                        <div class="track-info">
+                            <img th:if="${song.imageUrl}" th:src="${song.imageUrl}" class="track-img">
+                            <div th:unless="${song.imageUrl}" class="track-img" style="background: #333; display: flex; align-items: center; justify-content: center;">
+                                <i class="fa-solid fa-music" style="color: #555;"></i>
+                            </div>
+                            <div class="track-text">
+                                <span class="track-title" th:text="${song.title}"></span>
+                                <span class="track-artist" th:text="${song.artist}"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="track-actions">
+                            <audio th:if="${song.previewUrl}" controls>
+                                <source th:src="${song.previewUrl}" type="audio/mpeg">
+                            </audio>
+                            
+                            <a th:if="${song.spotifyUrl}" th:href="${song.spotifyUrl}" target="_blank" class="btn btn-small btn-spotify" title="Preview on Spotify">
+                                <i class="fa-brands fa-spotify"></i>
+                            </a>
+                            <a th:if="${song.youtubeMusicUrl}" th:href="${song.youtubeMusicUrl}" target="_blank" class="btn btn-small btn-yt" title="YouTube Music">
+                                <i class="fa-brands fa-youtube"></i>
+                            </a>
+                            
+                            <form th:action="@{/remove-song}" method="post" style="display: inline;">
+                                <input type="hidden" name="index" th:value="${iter.index}">
+                                <button type="submit" class="btn btn-small btn-remove" title="Remove Track">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </li>
+                </ul>
+
+                <form th:action="@{/create-spotify}" method="post" style="margin-top: 30px; text-align: center;">
+                    <button type="submit" class="btn btn-primary" style="padding: 16px 40px; font-size: 16px;">
+                        <i class="fa-brands fa-spotify"></i> Create on Spotify
+                    </button>
+                </form>
+            </div>
+
+            <!-- Empty State -->
+            <div th:unless="${playlist != null or music != null}" class="empty-state">
+                <i class="fa-solid fa-music"></i>
+                <p>Your journey hasn't started yet. Enter a mood or upload an image to begin.</p>
+            </div>
         </div>
     </div>
 </body>

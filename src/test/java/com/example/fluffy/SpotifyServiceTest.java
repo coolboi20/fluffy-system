@@ -171,4 +171,41 @@ class SpotifyServiceTest {
         assertEquals("http://deezer-preview-url", song.getPreviewUrl());
         assertEquals("http://track-spotify-url", song.getSpotifyUrl());
     }
+
+    @Test
+    void testEnrichWithTrackMetadataMultipleSongs() throws Exception {
+        // Arrange
+        PlaylistResponse playlistData = new PlaylistResponse();
+        for (int i = 0; i < 15; i++) {
+            PlaylistResponse.Song song = new PlaylistResponse.Song();
+            song.setTitle("Song " + i);
+            song.setArtist("Artist " + i);
+            playlistData.getSongs().add(song);
+        }
+
+        Track track = mock(Track.class, Answers.RETURNS_DEEP_STUBS);
+        when(track.getPreviewUrl()).thenReturn("http://preview-url");
+        ExternalUrl trackExternalUrl = mock(ExternalUrl.class);
+        when(trackExternalUrl.get("spotify")).thenReturn("http://track-spotify-url");
+        when(track.getExternalUrls()).thenReturn(trackExternalUrl);
+        when(track.getAlbum().getImages()).thenReturn(new se.michaelthelin.spotify.model_objects.specification.Image[0]);
+
+        Paging<Track> searchResult = mock(Paging.class);
+        when(searchResult.getItems()).thenReturn(new Track[]{track});
+
+        when(spotifyApi.searchTracks(anyString())
+                .limit(anyInt())
+                .build()
+                .execute()).thenReturn(searchResult);
+
+        // Act
+        spotifyService.enrichWithTrackMetadata(spotifyApi, playlistData);
+
+        // Assert
+        for (PlaylistResponse.Song song : playlistData.getSongs()) {
+            assertEquals("http://preview-url", song.getPreviewUrl(), "Failed for " + song.getTitle());
+            assertEquals("http://track-spotify-url", song.getSpotifyUrl());
+            assertNotNull(song.getYoutubeMusicUrl());
+        }
+    }
 }

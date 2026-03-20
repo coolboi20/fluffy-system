@@ -2,12 +2,15 @@ package com.example.fluffy;
 
 import java.util.List;
 
+/** Response model for AI-generated playlists. */
 public class PlaylistResponse {
     private String title;
     private String description;
     private List<Song> songs;
 
-    public PlaylistResponse() {}
+    public PlaylistResponse() {
+        this.songs = new java.util.ArrayList<>();
+    }
 
     public PlaylistResponse(String title, String description, List<Song> songs) {
         this.title = title;
@@ -22,6 +25,7 @@ public class PlaylistResponse {
     public List<Song> getSongs() { return songs; }
     public void setSongs(List<Song> songs) { this.songs = songs; }
 
+    /** Data model for an individual song within a playlist. */
     public static class Song {
         private String title;
         private String artist;

@@ -28,6 +28,9 @@ class FluffyControllerTest {
     @MockitoBean
     private SpotifyService spotifyService;
 
+    @MockitoBean
+    private DeezerService deezerService;
+
     @Test
     void testIndexWithoutCode() throws Exception {
         when(spotifyService.getAuthorizationUri()).thenReturn(URI.create("http://auth-url"));
@@ -139,5 +142,42 @@ class FluffyControllerTest {
         mockMvc.perform(post("/remove-song").param("index", "0"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/"));
+    }
+
+    @Test
+    void testGenerateMusicSuccess() throws Exception {
+        MusicResponse musicResponse = new MusicResponse();
+        musicResponse.setTitle("AI Song");
+        musicResponse.setReferenceTrackArtist("Artist");
+        musicResponse.setReferenceTrackTitle("Title");
+        
+        when(geminiService.generateMusicComposition(anyString(), any(), any())).thenReturn(musicResponse);
+        when(deezerService.getPreviewUrl(anyString(), anyString())).thenReturn("http://preview");
+
+        mockMvc.perform(multipart("/generate-music")
+                        .param("mood", "happy"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("index"))
+                .andExpect(model().attribute("music", musicResponse))
+                .andExpect(model().attribute("mood", "happy"));
+    }
+
+    @Test
+    void testGenerateMusicFromPromptSuccess() throws Exception {
+        MusicResponse musicResponse = new MusicResponse();
+        musicResponse.setTitle("Regenerated Song");
+        musicResponse.setReferenceTrackArtist("New Artist");
+        musicResponse.setReferenceTrackTitle("New Title");
+        
+        when(geminiService.generateMusicFromPrompt("new prompt")).thenReturn(musicResponse);
+        when(deezerService.getPreviewUrl(anyString(), anyString())).thenReturn("http://new-preview");
+
+        mockMvc.perform(post("/generate-music-from-prompt")
+                        .param("musicFXPrompt", "new prompt")
+                        .param("mood", "vibe"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("index"))
+                .andExpect(model().attribute("music", musicResponse))
+                .andExpect(model().attribute("mood", "vibe"));
     }
 }

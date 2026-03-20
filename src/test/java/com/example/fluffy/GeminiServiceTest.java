@@ -92,4 +92,72 @@ class GeminiServiceTest {
         assertNotNull(result);
         assertEquals("Sad Vibes", result.getTitle());
     }
+
+    @Test
+    void testGenerateMusicCompositionSuccess() throws Exception {
+        // Arrange
+        String mood = "energetic";
+        String jsonResponse = "{\"title\": \"Power Up\", \"lyrics\": \"Line 1\\nLine 2\", \"style\": \"Rock\", \"musicFXPrompt\": \"Rock song\", \"referenceTrackArtist\": \"Artist X\", \"referenceTrackTitle\": \"Song X\"}";
+        
+        AiMessage aiMessage = AiMessage.from(jsonResponse);
+        Response<AiMessage> response = Response.from(aiMessage);
+        
+        when(chatLanguageModel.generate(any(ChatMessage.class), any(ChatMessage.class))).thenReturn(response);
+        
+        // Act
+        MusicResponse result = geminiService.generateMusicComposition(chatLanguageModel, mood, null, null);
+        
+        // Assert
+        assertNotNull(result);
+        assertEquals("Power Up", result.getTitle());
+        assertEquals("Rock", result.getStyle());
+        assertEquals("Artist X", result.getReferenceTrackArtist());
+    }
+
+    @Test
+    void testGenerateMusicFromPromptSuccess() throws Exception {
+        // Arrange
+        String prompt = "A heavy metal track with industrial elements";
+        String jsonResponse = "{\"title\": \"Metal Machine\", \"lyrics\": \"Steel and iron\\nGrinding gears\", \"style\": \"Industrial Metal\", \"musicFXPrompt\": \"" + prompt + "\", \"referenceTrackArtist\": \"Rammstein\", \"referenceTrackTitle\": \"Du Hast\"}";
+        
+        AiMessage aiMessage = AiMessage.from(jsonResponse);
+        Response<AiMessage> response = Response.from(aiMessage);
+        
+        when(chatLanguageModel.generate(any(ChatMessage.class), any(ChatMessage.class))).thenReturn(response);
+        
+        // Act
+        MusicResponse result = geminiService.generateMusicFromPrompt(chatLanguageModel, prompt);
+        
+        // Assert
+        assertNotNull(result);
+        assertEquals("Metal Machine", result.getTitle());
+        assertEquals("Industrial Metal", result.getStyle());
+        assertEquals("Rammstein", result.getReferenceTrackArtist());
+    }
+
+    @Test
+    void testHandleLeakedApiKeyError() {
+        // Arrange
+        when(chatLanguageModel.generate(any(ChatMessage.class), any(ChatMessage.class)))
+                .thenThrow(new RuntimeException("HTTP error (403): { \"error\": { \"code\": 403, \"message\": \"Your API key was reported as leaked. Please use another API key.\", \"status\": \"PERMISSION_DENIED\" } }"));
+        
+        // Act & Assert
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> 
+                geminiService.generateMusicComposition(chatLanguageModel, "mood", null, null));
+        
+        assertTrue(exception.getMessage().contains("reported as leaked and revoked"));
+    }
+
+    @Test
+    void testHandleExpiredApiKeyError() {
+        // Arrange
+        when(chatLanguageModel.generate(any(ChatMessage.class), any(ChatMessage.class)))
+                .thenThrow(new RuntimeException("HTTP error (400): { \"error\": { \"code\": 400, \"message\": \"API key expired. Please renew the API key.\", \"status\": \"INVALID_ARGUMENT\" } }"));
+        
+        // Act & Assert
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> 
+                geminiService.generateMusicComposition(chatLanguageModel, "mood", null, null));
+        
+        assertTrue(exception.getMessage().contains("has expired"));
+    }
 }
